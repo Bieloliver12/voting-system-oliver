@@ -1,8 +1,9 @@
 import streamlit as st
 import json
 import os
-from datetime import datetime
+from datetime import datetime, time
 import pandas as pd
+import pytz
 
 # Configuration
 VOTES_FILE = "votes.json"
@@ -10,7 +11,7 @@ USERS_FILE = "users.json"
 
 # Valid users with their IDs and names
 VALID_USERS = {
-    "43483736M": "Gabriel Oliver",
+    "43483736M": "Gabriel Oliver",  # Corrected ID
     "41607985L": "Ricky Ortiz", 
     "48126919V": "Gonzalo Ros",
     "23899839X": "Oscar Boado",
@@ -32,6 +33,35 @@ CANDIDATES = [
 
 # Admin user who can see results
 ADMIN_ID = "46151901D"  # Miguel Ginot
+
+# Voting schedule
+MADRID_TZ = pytz.timezone('Europe/Madrid')
+VOTING_START_TIME = time(23, 30)  # 23:30 Madrid time
+
+def is_voting_open():
+    """Check if voting is currently open"""
+    madrid_now = datetime.now(MADRID_TZ)
+    current_time = madrid_now.time()
+    
+    # Voting is open from 23:30 onwards (same day)
+    return current_time >= VOTING_START_TIME
+
+def get_countdown_info():
+    """Get countdown information until voting opens"""
+    madrid_now = datetime.now(MADRID_TZ)
+    today = madrid_now.date()
+    
+    # Create voting start datetime for today
+    voting_start = datetime.combine(today, VOTING_START_TIME)
+    voting_start = MADRID_TZ.localize(voting_start)
+    
+    # If voting time has passed today, it means voting is open
+    if madrid_now >= voting_start:
+        return None, True
+    
+    # Calculate time remaining
+    time_remaining = voting_start - madrid_now
+    return time_remaining, False
 
 def load_votes():
     """Load votes from JSON file"""
@@ -112,6 +142,90 @@ def can_vote_for_candidate(user_id, candidate):
     user_name = VALID_USERS.get(user_id, "")
     return user_name != candidate
 
+def show_results_page():
+    """Show the results page (separated for reuse)"""
+    st.header("🔐 Acceso a Resultados")
+    
+    admin_id = st.text_input("Ingrese su ID para ver los resultados:", key="admin_login")
+    
+    if st.button("Acceder a Resultados"):
+        if admin_id == ADMIN_ID:
+            # Set session state to stay in results view
+            st.session_state.admin_logged_in = True
+            st.rerun()
+        else:
+            st.error("❌ ID no válido o sin permisos para ver resultados.")
+    
+    # Only show results if admin is logged in
+    if st.session_state.get('admin_logged_in', False):
+        st.success(f"Bienvenido, {VALID_USERS[ADMIN_ID]}")
+        
+        # Show results
+        st.header("📊 Resultados de la Votación")
+        
+        results = get_results()
+        total_votes = sum(results.values())
+        
+        if total_votes > 0:
+            # Create results dataframe
+            df_results = pd.DataFrame([
+                {"Candidato": candidate, "Votos": votes, "Porcentaje": f"{(votes/total_votes)*100:.1f}%"}
+                for candidate, votes in sorted(results.items(), key=lambda x: x[1], reverse=True)
+            ])
+            
+            st.dataframe(df_results, use_container_width=True)
+            
+            # Show bar chart
+            st.bar_chart(results)
+            
+            st.metric("Total de Votos", total_votes)
+            
+            # Show winner
+            winner = max(results.items(), key=lambda x: x[1])
+            if winner[1] > 0:
+                st.success(f"🏆 Ganador actual: **{winner[0]}** con {winner[1]} votos")
+            
+            # Admin button to clear all votes
+            st.markdown("---")
+            st.subheader("🗑️ Administración")
+            
+            if not st.session_state.confirm_delete:
+                if st.button("🚨 BORRAR TODOS LOS VOTOS", type="secondary"):
+                    st.session_state.confirm_delete = True
+                    st.rerun()
+            else:
+                st.warning("⚠️ ¿Está seguro de borrar TODOS los votos? Esta acción no se puede deshacer.")
+                col1, col2 = st.columns([1, 1])
+                with col1:
+                    if st.button("✅ SÍ, BORRAR TODO", type="primary"):
+                        if clear_all_votes():
+                            st.session_state.confirm_delete = False
+                            st.success("🗑️ Todos los votos han sido borrados.")
+                            st.rerun()
+                        else:
+                            st.error("No se pudieron borrar los archivos.")
+                with col2:
+                    if st.button("❌ Cancelar"):
+                        st.session_state.confirm_delete = False
+                        st.rerun()
+        else:
+            st.info("No hay votos registrados aún.")
+            
+            # Admin button to clear all votes (even when no votes)
+            st.markdown("---")
+            st.subheader("🗑️ Administración")
+            if st.button("🚨 RESETEAR SISTEMA", type="secondary"):
+                if clear_all_votes():
+                    st.success("🗑️ Sistema reseteado.")
+                    st.rerun()
+                else:
+                    st.info("No había archivos para borrar.")
+    
+    if st.button("← Volver al Login"):
+        st.session_state.show_results = False
+        st.session_state.confirm_delete = False
+        st.rerun()
+
 def get_results():
     """Get voting results"""
     votes = load_votes()
@@ -154,6 +268,105 @@ def main():
     st.subheader("Elección Presidente - Soluciones Digitales Oliver")
     st.markdown("---")
 
+    # Check voting schedule
+    time_remaining, voting_is_open = get_countdown_info()
+    
+    if not voting_is_open:
+        # Show countdown page
+        st.header("⏰ La Votación Aún No Ha Comenzado")
+        st.info("La votación comenzará a las **23:30 hora de Madrid**")
+        
+        # Display current Madrid time
+        madrid_now = datetime.now(MADRID_TZ)
+        st.write(f"🕐 Hora actual de Madrid: **{madrid_now.strftime('%H:%M:%S')}**")
+        
+        # Live countdown timer with JavaScript
+        if time_remaining:
+            # Calculate target time in milliseconds since epoch
+            today = madrid_now.date()
+            voting_start = datetime.combine(today, VOTING_START_TIME)
+            voting_start = MADRID_TZ.localize(voting_start)
+            target_timestamp = int(voting_start.timestamp() * 1000)
+            
+            st.markdown("### ⏱️ Tiempo Restante:")
+            
+            # Create placeholder for countdown
+            countdown_placeholder = st.empty()
+            
+            # JavaScript countdown timer
+            countdown_html = f"""
+            <div style="text-align: center; font-family: monospace; font-size: 2em; padding: 20px; background: linear-gradient(90deg, #ff6b6b, #4ecdc4); color: white; border-radius: 15px; margin: 20px 0;">
+                <div id="countdown" style="font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+                    Calculando...
+                </div>
+            </div>
+            
+            <script>
+            function updateCountdown() {{
+                const targetTime = {target_timestamp};
+                const now = new Date().getTime();
+                const distance = targetTime - now;
+                
+                if (distance > 0) {{
+                    const hours = Math.floor(distance / (1000 * 60 * 60));
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                    
+                    document.getElementById("countdown").innerHTML = 
+                        String(hours).padStart(2, '0') + ":" + 
+                        String(minutes).padStart(2, '0') + ":" + 
+                        String(seconds).padStart(2, '0');
+                }} else {{
+                    document.getElementById("countdown").innerHTML = "¡LA VOTACIÓN HA COMENZADO!";
+                    document.getElementById("countdown").style.background = "linear-gradient(90deg, #00c851, #007E33)";
+                    setTimeout(function() {{
+                        window.location.reload();
+                    }}, 2000);
+                }}
+            }}
+            
+            // Update every second
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
+            </script>
+            """
+            
+            st.markdown(countdown_html, unsafe_allow_html=True)
+            
+            # Also show metric cards that update every 30 seconds (less frequent)
+            hours = int(time_remaining.total_seconds() // 3600)
+            minutes = int((time_remaining.total_seconds() % 3600) // 60)
+            seconds = int(time_remaining.total_seconds() % 60)
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Horas", f"{hours:02d}")
+            with col2:
+                st.metric("Minutos", f"{minutes:02d}")
+            with col3:
+                st.metric("Segundos", f"{seconds:02d}")
+            
+            # Refresh page every 30 seconds to sync (less aggressive)
+            import time
+            time.sleep(30)
+            st.rerun()
+        
+        st.markdown("---")
+        st.info("💡 **Instrucciones:**\n- El contador se actualiza automáticamente cada segundo\n- La página se recargará automáticamente cuando comience la votación\n- Solo podrás votar una vez")
+        
+        # Still allow admin to see results during countdown
+        if st.sidebar.button("Ver Resultados (Solo Admin)"):
+            st.session_state.show_results = True
+            st.session_state.authenticated = False
+            st.session_state.confirm_delete = False
+            st.rerun()
+        
+        # Only show results page, not voting
+        if st.session_state.show_results:
+            show_results_page()
+        
+        return
+
     # Check if user wants to see results (admin only)
     if st.sidebar.button("Ver Resultados (Solo Admin)"):
         st.session_state.show_results = True
@@ -162,88 +375,7 @@ def main():
 
     # Results page (Admin only)
     if st.session_state.show_results:
-        st.header("🔐 Acceso a Resultados")
-        
-        admin_id = st.text_input("Ingrese su ID para ver los resultados:", key="admin_login")
-        
-        if st.button("Acceder a Resultados"):
-            if admin_id == ADMIN_ID:
-                # Set session state to stay in results view
-                st.session_state.admin_logged_in = True
-                st.rerun()
-            else:
-                st.error("❌ ID no válido o sin permisos para ver resultados.")
-        
-        # Only show results if admin is logged in
-        if st.session_state.get('admin_logged_in', False):
-            st.success(f"Bienvenido, {VALID_USERS[ADMIN_ID]}")
-            
-            # Show results
-            st.header("📊 Resultados de la Votación")
-            
-            results = get_results()
-            total_votes = sum(results.values())
-            
-            if total_votes > 0:
-                # Create results dataframe
-                df_results = pd.DataFrame([
-                    {"Candidato": candidate, "Votos": votes, "Porcentaje": f"{(votes/total_votes)*100:.1f}%"}
-                    for candidate, votes in sorted(results.items(), key=lambda x: x[1], reverse=True)
-                ])
-                
-                st.dataframe(df_results, use_container_width=True)
-                
-                # Show bar chart
-                st.bar_chart(results)
-                
-                st.metric("Total de Votos", total_votes)
-                
-                # Show winner
-                winner = max(results.items(), key=lambda x: x[1])
-                if winner[1] > 0:
-                    st.success(f"🏆 Ganador actual: **{winner[0]}** con {winner[1]} votos")
-                
-                # Admin button to clear all votes
-                st.markdown("---")
-                st.subheader("🗑️ Administración")
-                
-                if not st.session_state.confirm_delete:
-                    if st.button("🚨 BORRAR TODOS LOS VOTOS", type="secondary"):
-                        st.session_state.confirm_delete = True
-                        st.rerun()
-                else:
-                    st.warning("⚠️ ¿Está seguro de borrar TODOS los votos? Esta acción no se puede deshacer.")
-                    col1, col2 = st.columns([1, 1])
-                    with col1:
-                        if st.button("✅ SÍ, BORRAR TODO", type="primary"):
-                            if clear_all_votes():
-                                st.session_state.confirm_delete = False
-                                st.success("🗑️ Todos los votos han sido borrados.")
-                                st.rerun()
-                            else:
-                                st.error("No se pudieron borrar los archivos.")
-                    with col2:
-                        if st.button("❌ Cancelar"):
-                            st.session_state.confirm_delete = False
-                            st.rerun()
-            else:
-                st.info("No hay votos registrados aún.")
-                
-                # Admin button to clear all votes (even when no votes)
-                st.markdown("---")
-                st.subheader("🗑️ Administración")
-                if st.button("🚨 RESETEAR SISTEMA", type="secondary"):
-                    if clear_all_votes():
-                        st.success("🗑️ Sistema reseteado.")
-                        st.rerun()
-                    else:
-                        st.info("No había archivos para borrar.")
-        
-        if st.button("← Volver al Login"):
-            st.session_state.show_results = False
-            st.session_state.confirm_delete = False
-            st.rerun()
-        
+        show_results_page()
         return
 
     # Login page
