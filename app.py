@@ -10,7 +10,7 @@ USERS_FILE = "users.json"
 
 # Valid users with their IDs and names
 VALID_USERS = {
-    "43483736M": "Gabriel Oliver",  # Fixed your ID
+    "43483736M": "Gabriel Oliver",
     "41607985L": "Ricky Ortiz", 
     "48126919V": "Gonzalo Ros",
     "23899839X": "Oscar Boado",
@@ -102,10 +102,6 @@ def clear_all_votes():
             os.remove(USERS_FILE)
             files_deleted.append("users.json")
         
-        st.write(f"DEBUG: Deleted files: {files_deleted}")
-        st.write(f"DEBUG: votes.json exists after delete: {os.path.exists(VOTES_FILE)}")
-        st.write(f"DEBUG: users.json exists after delete: {os.path.exists(USERS_FILE)}")
-        
         return len(files_deleted) > 0
     except Exception as e:
         st.error(f"Error deleting files: {str(e)}")
@@ -162,7 +158,7 @@ def main():
     if st.sidebar.button("Ver Resultados (Solo Admin)"):
         st.session_state.show_results = True
         st.session_state.authenticated = False
-        st.session_state.confirm_delete = False  # Reset confirm state
+        st.session_state.confirm_delete = False
 
     # Results page (Admin only)
     if st.session_state.show_results:
@@ -181,7 +177,7 @@ def main():
         # Only show results if admin is logged in
         if st.session_state.get('admin_logged_in', False):
             st.success(f"Bienvenido, {VALID_USERS[ADMIN_ID]}")
-                
+            
             # Show results
             st.header("📊 Resultados de la Votación")
             
@@ -220,7 +216,6 @@ def main():
                     col1, col2 = st.columns([1, 1])
                     with col1:
                         if st.button("✅ SÍ, BORRAR TODO", type="primary"):
-                            st.write("DEBUG: Delete button clicked")
                             if clear_all_votes():
                                 st.session_state.confirm_delete = False
                                 st.success("🗑️ Todos los votos han sido borrados.")
@@ -238,18 +233,15 @@ def main():
                 st.markdown("---")
                 st.subheader("🗑️ Administración")
                 if st.button("🚨 RESETEAR SISTEMA", type="secondary"):
-                    st.write("DEBUG: Reset button clicked")
                     if clear_all_votes():
                         st.success("🗑️ Sistema reseteado.")
                         st.rerun()
                     else:
                         st.info("No había archivos para borrar.")
-        else:
-            st.error("❌ ID no válido o sin permisos para ver resultados.")
         
         if st.button("← Volver al Login"):
             st.session_state.show_results = False
-            st.session_state.confirm_delete = False  # Reset confirm state
+            st.session_state.confirm_delete = False
             st.rerun()
         
         return
@@ -259,7 +251,7 @@ def main():
         st.header("🔐 Identificación de Usuario")
         st.write("Ingrese su ID para acceder al sistema de votación:")
         
-        user_id = st.text_input("ID de Usuario:", placeholder="Ej: 43483736M")
+        user_id = st.text_input("ID de Usuario:", placeholder="Ej: 43484746M")
         
         if st.button("🚀 Ingresar", type="primary"):
             if user_id in VALID_USERS:
