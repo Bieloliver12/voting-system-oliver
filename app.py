@@ -148,6 +148,10 @@ def main():
         st.session_state.confirm_delete = False
     if 'admin_logged_in' not in st.session_state:
         st.session_state.admin_logged_in = False
+    if 'vote_submitted' not in st.session_state:
+        st.session_state.vote_submitted = False
+    if 'voted_candidate' not in st.session_state:
+        st.session_state.voted_candidate = None
 
     # Header
     st.title("🗳️ Sistema de Votación")
@@ -294,6 +298,26 @@ def main():
         if len(available_candidates) < len(CANDIDATES):
             st.info(f"ℹ️ Nota: No puede votar por usted mismo ({user_name})")
         
+        # Check if user just voted
+        if st.session_state.vote_submitted:
+            # Show success message and balloons
+            st.success(f"🎉 ¡Voto registrado exitosamente por {st.session_state.voted_candidate}!")
+            st.balloons()
+            st.info("Gracias por participar. Presione 'Continuar' para salir.")
+            
+            if st.button("✅ Continuar", type="primary"):
+                # Reset all session state
+                st.session_state.authenticated = False
+                st.session_state.user_id = None
+                st.session_state.user_name = None
+                st.session_state.vote_submitted = False
+                st.session_state.voted_candidate = None
+                st.success("✅ Sesión cerrada. Ya no puede votar de nuevo.")
+                st.rerun()
+            
+            # Don't show the voting form if vote was just submitted
+            return
+        
         st.markdown("**Candidatos disponibles:**")
         
         # Voting form
@@ -316,19 +340,10 @@ def main():
             if selected_candidate:
                 # Save vote immediately
                 if save_vote(st.session_state.user_id, selected_candidate):
-                    st.success(f"🎉 ¡Voto registrado exitosamente por {selected_candidate}!")
-                    st.balloons()
-                    
-                    # Show message and let user see balloons
-                    st.info("Gracias por participar. Presione cualquier botón para continuar.")
-                    
-                    # Add a button to continue after seeing balloons
-                    if st.button("✅ Continuar", type="primary"):
-                        # Reset session
-                        st.session_state.authenticated = False
-                        st.session_state.user_id = None
-                        st.session_state.user_name = None
-                        st.rerun()
+                    # Set session state to show success page
+                    st.session_state.vote_submitted = True
+                    st.session_state.voted_candidate = selected_candidate
+                    st.rerun()
                 else:
                     st.error("Error al guardar el voto. Inténtelo de nuevo.")
             else:
