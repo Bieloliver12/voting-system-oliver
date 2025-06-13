@@ -12,9 +12,7 @@ USERS_FILE = "users_runoff.json"
 
 # Valid users with their IDs and names
 VALID_USERS = {
-    "43483736M": "Gabriel Oliver",  # Corrected ID
     "41607985L": "Ricky Ortiz", 
-    "48126919V": "Gonzalo Ros",
     "23899839X": "Oscar Boado",
     "39974093R": "Tillo",
     "46151901D": "Miguel Ginot",
@@ -321,50 +319,6 @@ def main():
         animation: slideInDown 0.8s ease-out;
     }
     
-    .epic-intro {
-        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-        padding: 3rem;
-        border-radius: 20px;
-        text-align: center;
-        color: white;
-        margin: 2rem 0;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .epic-intro::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-        animation: shine 3s infinite;
-    }
-    
-    .epic-intro h1 {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        font-weight: 800;
-    }
-    
-    .epic-intro h2 {
-        font-size: 2rem;
-        margin-bottom: 1.5rem;
-        color: #ffd700;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
-    }
-    
-    .epic-intro p {
-        font-size: 1.3rem;
-        line-height: 1.6;
-        margin: 1rem 0;
-        color: #f0f8ff;
-    }
-    
     .runoff-announcement {
         background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
         padding: 1.5rem;
@@ -377,7 +331,7 @@ def main():
     }
     
     .candidate-card {
-        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        background: white;
         padding: 2rem;
         border-radius: 15px;
         text-align: center;
@@ -385,7 +339,6 @@ def main():
         margin: 1rem;
         transition: transform 0.3s ease, box-shadow 0.3s ease;
         border: 2px solid transparent;
-        color: #2c3e50;
     }
     
     .candidate-card:hover {
@@ -393,42 +346,20 @@ def main():
         box-shadow: 0 15px 35px rgba(0,0,0,0.15);
     }
     
-    .candidate-card h2 {
-        color: #2c3e50 !important;
-        font-weight: 700;
-        margin-bottom: 1rem;
-    }
-    
-    .candidate-card p {
-        color: #34495e !important;
-        font-size: 1.1rem;
-    }
-    
     .gabriel-card {
         border-left: 5px solid #667eea;
-        background: linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%);
     }
     
     .gonzalo-card {
         border-left: 5px solid #764ba2;
-        background: linear-gradient(135deg, #f3e5f5 0%, #ffffff 100%);
     }
     
     .login-container {
-        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        background: white;
         padding: 2rem;
         border-radius: 15px;
         box-shadow: 0 10px 25px rgba(0,0,0,0.1);
         margin: 2rem 0;
-        color: #2c3e50;
-    }
-    
-    .login-container h2 {
-        color: #667eea !important;
-    }
-    
-    .login-container p {
-        color: #34495e !important;
     }
     
     .vote-success {
@@ -440,11 +371,6 @@ def main():
         margin: 2rem 0;
         box-shadow: 0 10px 25px rgba(79, 172, 254, 0.3);
         animation: bounceIn 1s ease-out;
-    }
-    
-    @keyframes shine {
-        0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-        100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
     }
     
     @keyframes slideInDown {
@@ -477,28 +403,6 @@ def main():
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(0,0,0,0.2);
     }
-    
-    .destiny-text {
-        background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 50%, #fecfef 100%);
-        padding: 2rem;
-        border-radius: 15px;
-        margin: 2rem 0;
-        text-align: center;
-        color: #2c3e50;
-        box-shadow: 0 10px 20px rgba(255, 154, 158, 0.3);
-    }
-    
-    .destiny-text h3 {
-        color: #8e44ad !important;
-        font-weight: 700;
-        margin-bottom: 1rem;
-    }
-    
-    .destiny-text p {
-        color: #2c3e50 !important;
-        font-size: 1.1rem;
-        line-height: 1.6;
-    }
     </style>
     """, unsafe_allow_html=True)
     
@@ -521,19 +425,6 @@ def main():
         st.session_state.voted_candidate = None
 
     # Header
-    st.markdown("""
-    <div class="epic-intro">
-        <h1>⚡ EL MOMENTO DECISIVO ⚡</h1>
-        <h2>🏆 ELIGE A TU LÍDER SUPREMO 🏆</h2>
-        <p><strong>El destino de Soluciones Digitales Oliver está en TUS manos.</strong></p>
-        <p>Después de una batalla épica que terminó en empate, solo DOS GUERREROS permanecen en pie.</p>
-        <p><em>Gabriel Oliver</em> vs <em>Gonzalo Ros</em></p>
-        <p>🔥 <strong>UNO SERÁ EL REY. UNO SERÁ EL PRESIDENTE. UNO SERÁ LA LEYENDA.</strong> 🔥</p>
-        <p>Tu voto no es solo una elección... <strong>ES LA DECISIÓN QUE MARCARÁ LA HISTORIA.</strong></p>
-        <p>💫 El poder está en tus manos. Úsalo sabiamente. 💫</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
     st.markdown("""
     <div class="main-header">
         <h1>🗳️ SEGUNDA VUELTA ELECTORAL</h1>
@@ -587,16 +478,6 @@ def main():
 
     # Login page
     if not st.session_state.authenticated:
-        st.markdown("""
-        <div class="destiny-text">
-            <h3>🌟 EL MOMENTO DE LA VERDAD HA LLEGADO 🌟</h3>
-            <p><strong>Ciudadano de Soluciones Digitales Oliver</strong>, el universo conspira para que TÚ seas quien decida el futuro.</p>
-            <p>Dos titanes han sobrevivido a la primera batalla. Ahora, solo queda la GUERRA FINAL.</p>
-            <p><em>Tu voto es tu espada. Tu decisión es tu escudo. Tu elección será tu legado.</em></p>
-            <p>🔥 <strong>¿Estás listo para hacer historia?</strong> 🔥</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
         st.markdown("""
         <div class="login-container">
             <h2 style="text-align: center; color: #667eea;">🔐 Acceso al Sistema de Votación</h2>
@@ -673,8 +554,8 @@ def main():
             st.markdown("""
             <div class="candidate-card gabriel-card">
                 <h2>🏛️ Gabriel Oliver</h2>
-                <p style="font-size: 1.2em; color: #667eea !important; font-weight: 600;">Candidato Finalista</p>
-                <p style="color: #2c3e50 !important;">Experiencia y liderazgo para el futuro</p>
+                <p style="font-size: 1.2em; color: #667eea;">Candidato Finalista</p>
+                <p>Experiencia y liderazgo para el futuro</p>
             </div>
             """, unsafe_allow_html=True)
         
@@ -682,8 +563,8 @@ def main():
             st.markdown("""
             <div class="candidate-card gonzalo-card">
                 <h2>🏛️ Gonzalo Ros</h2>
-                <p style="font-size: 1.2em; color: #764ba2 !important; font-weight: 600;">Candidato Finalista</p>
-                <p style="color: #2c3e50 !important;">Innovación y cambio organizacional</p>
+                <p style="font-size: 1.2em; color: #764ba2;">Candidato Finalista</p>
+                <p>Innovación y cambio organizacional</p>
             </div>
             """, unsafe_allow_html=True)
         
